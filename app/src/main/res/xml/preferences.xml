@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:defaultValue="ESP_40FDF4"
+        android:inputType="text"
+        android:key="host_preference"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:summary="IP or hostname of the clock"
+        android:title="Host" />
+    <EditTextPreference
+        android:defaultValue="8000"
+        android:inputType="number"
+        android:key="port_preference"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:summary="Port number of the clock"
+        android:title="Port" />
+    <EditTextPreference
+        android:defaultValue="1"
+        android:inputType="number"
+        android:key="num_devices_preference"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:summary="Number of Display Devices"
+        android:title="Devices" />
+</PreferenceScreen>
