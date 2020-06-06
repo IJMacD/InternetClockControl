@@ -1,8 +1,6 @@
 package com.ijmacd.internetclockcontrol
 
 import android.os.Bundle
-import android.os.Debug
-import android.util.AttributeSet
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -21,6 +19,11 @@ import java.util.*
  */
 class FirstFragment : Fragment() {
 
+    private val SAVED_MESSAGE = "saved_message"
+    private val SAVED_HEX = "saved_hex"
+    private var messageText: EditText? = null
+    private var container: LinearLayout? = null
+
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?
@@ -35,9 +38,11 @@ class FirstFragment : Fragment() {
 
         val c = Communicator(context!!)
 
+        messageText = view.findViewById<EditText>(R.id.message_input)
+        messageText?.setText(savedInstanceState?.getString(SAVED_MESSAGE))
+
         view.findViewById<Button>(R.id.button_send).setOnClickListener {
-            val text = view.findViewById<EditText>(R.id.message_input)
-            c.send(text.text.toString())
+            c.send(messageText?.text.toString())
         }
 
         view.findViewById<Button>(R.id.time_button).setOnClickListener {
@@ -64,25 +69,48 @@ class FirstFragment : Fragment() {
             c.send("cycle")
         }
 
-        val container = view.findViewById<LinearLayout>(R.id.bitmap_container)
+        container = view.findViewById<LinearLayout>(R.id.bitmap_container)
         val dp = context!!.resources.displayMetrics.density
         val layoutParams = ViewGroup.LayoutParams((300 * dp).toInt(),(300 * dp).toInt())
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         val count = preferences.getString("num_devices_preference", "1")!!.toInt()
+        val savedHex = savedInstanceState?.getString(SAVED_HEX)
+        Log.d(javaClass.simpleName, "Restored: $savedHex")
         for (i in 1..count) {
             val be = BitmapEditor(context!!)
             be.layoutParams = layoutParams
-            container.addView(be)
+            val segment = savedHex?.substring((i - 1) * 16, i * 16)
+            if (segment != null && segment.length >= 16) {
+                val bytes = ByteArray(8)
+                for (i in bytes.indices) {
+                    val str = segment.substring(i * 2, i * 2 + 2)
+                    bytes[i] = Integer.parseInt(str, 16).toByte()
+                }
+                be.value = bytes
+            }
+            container?.addView(be)
             be.setOnChangeListener {
-                val hex = container.children
-                    .map { (it as BitmapEditor).value.toUByteArray().joinToString("") {
-                        it.toString(16).toUpperCase(Locale.ROOT).padStart(2, '0')
-                    } }
-                    .joinToString("")
+                val hex = getHex()
                 c.send("bitmap $hex")
 
                 view.findViewById<TextView>(R.id.bitmap_text).text = hex
             }
         }
+    }
+
+    private fun getHex(): String {
+        return container!!.children
+            .map {
+                (it as BitmapEditor).value.map { String.format("%02X", it) }.joinToString("")
+            }
+            .joinToString("")
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(SAVED_MESSAGE, messageText?.text.toString())
+        val hex = getHex()
+        Log.d(javaClass.simpleName, "Saved: $hex")
+        outState.putString(SAVED_HEX, hex)
+        super.onSaveInstanceState(outState)
     }
 }
